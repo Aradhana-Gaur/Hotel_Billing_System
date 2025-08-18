@@ -1,0 +1,140 @@
+import tkinter as tk
+from tkinter import messagebox
+from tkinter import filedialog
+from datetime import datetime
+
+class HotelBillingSystem:
+    def __init__(self,root):
+        self.root=root
+        self.root.title("Hotel Billing System")
+        self.root.geometry("1024x650+20+20")
+
+        self.items = {"Drink": 10,
+                      "Burger Veg": 50,
+                      "Chips": 30,
+                      "Noodle Fries": 40,
+                      "Pasta": 60,
+                      "Biscuits": 20,
+                      "Roll": 70,
+                      "Tea": 15,
+                      "Dosa": 40,
+                      "Masala Dosa": 60,
+                      "Plain Maggi": 25,
+                      "Masala Maggi": 30,
+                      "Veg Maggi": 35,
+                      "Cheese Maggi": 40,
+                      "Chinese Platter": 100}
+        self.order_data = {}
+        # Create Frames
+        self.create_frames()
+
+    def create_frames(self):
+        # ==========Title==========
+        tk.Label(self.root, text="Hotel Net-Tech", font=("Helvetica", 20, "bold"), fg="red").pack(pady=10)
+
+        # ======== Customer Info Section ========
+        tk.Label(self.root, text="Customer Name:", font=("Arial",10)).place(x=20,y=50)
+        self.name_entry = tk.Entry(self.root,width=20)
+        self.name_entry.place(x=130,y=50)
+
+        tk.Label(self.root, text="Phone No.:", font=("Arial",10)).place(x=320,y=50)
+        self.phone_entry = tk.Entry(self.root,width=20)
+        self.phone_entry.place(x=400,y=50)
+        # ========Menu Frame========
+        menu_frame = tk.LabelFrame(self.root, text="ITEM", padx=10, pady=10,
+                                   font=("Arial", 12, "bold"), bg="light blue")
+        menu_frame.place(x=20,y=80,width=350,height=400)
+
+        self.entries = {}
+        row = 0
+        for item in self.items:
+            tk.Label(menu_frame, text=f"{item} ( \u20B9 {self.items[item]})",
+                     font=("Arial", 10), bg="light blue").grid(row=row, column=0, sticky=tk.W)
+            entry = tk.Entry(menu_frame, width=10)
+            entry.grid(row=row, column=1, padx = 30)
+            self.entries[item] = entry
+            row = row + 1
+        # ======== Billing Frame ========
+        billing_frame = tk.LabelFrame(self.root, text="BILL", padx=10, pady=10,
+                                      font=("Arial", 12, "bold"), bg="light pink")
+        billing_frame.place(x=390, y=80, width=470, height=300)
+
+        self.bill_text = tk.Text(billing_frame, font=("Arial", 10), width=48, height=14)
+        self.bill_text.pack()
+        # ======== Control Buttons ========
+        button_frame = tk.Frame(self.root)
+        button_frame.place(x=390, y=400, width=470, height=100)
+
+        tk.Button(button_frame, text="Total", command=self.calculate_total, bg="orange",
+                  font=("Arial", 12, "bold")).grid(row=0, column=0, padx=10, pady=10)
+        tk.Button(button_frame, text="Reset", command=self.reset_form, bg="green",
+                  font=("Arial", 12, "bold")).grid(row=0, column=1, padx=10, pady=10)
+        tk.Button(button_frame, text="Quit", command=self.root.quit, bg="red",
+                  font=("Arial", 12, "bold")).grid(row=0, column=2, padx=10, pady=10)
+        tk.Button(button_frame, text="Save", command=self.save_bill, bg="blue", fg="white",
+                  font=("Arial", 12, "bold")).grid(row=1, column=1, padx=10, pady=10)
+        tk.Button(button_frame, text="Preview", command=self.print_preview, bg="purple", fg="white",
+                  font=("Arial", 12, "bold")).grid(row=1, column=2, padx=10, pady=10)
+
+    def calculate_total(self):
+        self.bill_text.delete("1.0", tk.END)
+        total = 0
+        self.bill_text.insert(tk.END, "Items\tQty\tPrice\n")
+        self.bill_text.insert(tk.END, "-" * 30 + "\n")
+
+        for item, entry in self.entries.items():
+            qty = entry.get()
+            if qty.isdigit() and int(qty) > 0:
+                qty = int(qty)
+                price = self.items[item]*qty
+                total = total + price
+                self.bill_text.insert(tk.END, f"{item}\t{qty}\tRs.{price}\n")
+
+        cgst = total * 0.025
+        sgst = total * 0.025
+        final_total = total + cgst + sgst
+        self.bill_text.insert(tk.END, "-" * 30 + "\n")
+        self.bill_text.insert(tk.END, f"Subtotal : \t\tRs.{total: .2f}\n")
+        self.bill_text.insert(tk.END, f"CGST (2.5%) : \tRs.{cgst: .2f}\n")
+        self.bill_text.insert(tk.END, f"SGST (2.5%) : \tRs.{sgst: .2f}\n")
+        self.bill_text.insert(tk.END, f"Total : \t\tRs.{final_total: .2f}\n")
+        self.bill_text.see(tk.END)
+
+    def reset_form(self):
+        for entry in self.entries.values():
+            entry.delete(0, tk.END)
+        self.bill_text.delete(1.0, tk.END)
+
+    def save_bill(self):
+        try:
+            file_path = filedialog.asksaveasfilename(defaultextension=".txt",
+                                        filetypes=[("Text Files", "*.txt")],title="Save Bill As")
+            if not file_path:
+                return #User Cancelled
+            now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            with open(file_path, "w",encoding="utf-8") as f:
+                f.write("Hotel Net-Tech Billing System\n")
+                f.write(f"Date/Time: {now}\n")
+                f.write(f"Customer: {self.name_entry.get()} Phone: {self.phone_entry.get()}\n\n")
+                f.write(self.bill_text.get(1.0, tk.END))
+            messagebox.showinfo("Saved", f"Bill successfully saved: \n{file_path}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error saving bill:\n{e}")
+
+    def print_preview(self):
+        preview_win = tk.Toplevel(self.root)
+        preview_win.title("Print Preview")
+        preview_win.geometry("500x600")
+        preview_text = tk.Text(preview_win, font=("Arial", 12))
+        preview_text.pack(expand=True, fill=tk.BOTH)
+        bill_data = self.bill_text.get("1.0", tk.END).strip()
+        preview_text.insert(tk.END, bill_data)
+
+
+
+
+# ========Main Application ========
+if __name__ == '__main__':
+    root = tk.Tk()
+    app = HotelBillingSystem(root)
+    root.mainloop()
